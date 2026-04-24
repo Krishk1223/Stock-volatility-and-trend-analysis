@@ -205,3 +205,28 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+# Data files (large and often generated)
+data/raw/
+data/processed/
+*.csv
+*.xlsx
+*.json
+
+# Generated outputs
+outputs/figures/
+*.png
+*.jpg
+*.jpeg
+*.pdf
+
+# macOS specific
+.DS_Store
+
+# IDE settings
+.vscode/
+.idea/
+
+# Jupyter temp files
+.ipynb_checkpoints/
