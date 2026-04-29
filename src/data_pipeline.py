@@ -9,7 +9,6 @@ import pandas_market_calendars as mcal
 import yfinance as yf
 import src.config as cf
 
-
 def fetch_stock_data(symbols, start_date, end_date, intervals, adjust=True):
     """
     Step 1: Data Retrieval
@@ -341,7 +340,6 @@ def plot_stocks(data):
     plt.tight_layout()
     plt.show()
     
-
 def save_plots(data, plot, filename='stock_price_plots.png'):
     """
     Utility function to save the plot of closing price of multiple stocks. Creates one plot per stock and saves it to specified location.
@@ -354,21 +352,23 @@ def save_plots(data, plot, filename='stock_price_plots.png'):
     """
     pass #tbd in a bit
 
-
-
-def save_data(data, filename='cleaned_stock_data.csv'):
+def save_data(data, print_path=False, filename='cleaned_stock_data.csv'):
     """
     Step 4: Save Data
     Save the cleaned and processed data to a specified location for future use in analysis and modeling.
     Parameters:
         data (pd.DataFrame): Cleaned stock data to be saved.
+        print_path (bool): Whether to print the file path after saving.
         filename (str): Name of the file to save the data to.
     Returns:
         None: Saves the cleaned data to a specified file path and prints file path for reference.
     """
     cf.ensure_directories() # ensure that necessary directories exist before saving data.
     data.to_csv(cf.PROCESSED_DATA / filename)
-    print(f"Cleaned data for stocks {cf.SYMBOLS} saved to {cf.PROCESSED_DATA / filename}")
+    if print_path:
+        print(f"Cleaned data for stocks {cf.SYMBOLS} saved to {cf.PROCESSED_DATA / filename}")
+    else:
+        print(f"Cleaned data for stocks {cf.SYMBOLS} saved successfully.")
 
 def main():
    stock_data = fetch_stock_data(cf.SYMBOLS, cf.START_DATE, cf.END_DATE, cf.INTERVAL)
