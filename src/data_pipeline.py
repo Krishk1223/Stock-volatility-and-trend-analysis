@@ -41,29 +41,6 @@ def fetch_stock_data(symbols, start_date, end_date, intervals, adjust=True):
     
     return data
 
-def log_returns(data, price_col='Close', drop=False):
-    """
-    Calculate log returns for given stock data (and drops NaN values). Useful for long term returns + 
-    volatility calculations and used in time series modelling as well as Monte Carlo simulations.
-    Parameters:
-        data (pd.DataFrame): DataFrame containing stock data with 'Close' price column.
-        price_col (str): Column name for price data to calculate log returns on. Defaults to 'Close'.
-                            Options ['Open', 'Close']
-        drop (bool) : whether to drop NaN values resulting from log return calculation. Defailts to false
-                      to preserve data size for any further checks.
-    Returns:
-        log_returns (pd.DataFrame): DataFrame containing log returns of the stock prices.
-    """
-    if price_col not in ['Open', 'Close']:
-        print(f"Invalid price column specified. Allowed options are 'Open' and 'Close'. Defaulting to 'Close'.")
-        price_col = 'Close'
-
-    log_returns = np.log(data[price_col] / data[price_col].shift(1))
-    if drop:
-        log_returns = log_returns.dropna()
-    
-    return log_returns
-
 def check_trading_days(data, calendar=cf.STOCK_EXCHANGE_TIMEZONE):
     """
     Check if the data contains only trading days based on the specified calendar. Used in Validation step.
@@ -295,52 +272,64 @@ def clean_data(data, checks_dict, fill_method='ffill'):
 
     return data['Close'] #only returns adjusted close price data
 
-def plot_single_stock(data, symbol):
+def plot_single_stock(data, symbol, ax=None):
     """
     Utility function to plot the closing price of a single stock over time.
     Parameters:
         data (pd.DataFrame): DataFrame containing stock data with 'Close' price column.
         symbol (str): Stock ticker symbol to be plotted.
+        ax (matplotlib.axes.Axes, optional): Matplotlib Axes object to plot on. If None, a new figure and axes will be created. Defaults to None.
     Returns:
-        None: Displays the plot of closing price for the specified stock.
+        fig (matplotlib.figure.Figure): The matplotlib Figure object containing the plot for the specified stock.
     """
     if symbol not in data.columns:
         print(f"Symbol {symbol} not found in data. Available symbols are: {data.columns.tolist()}")
         return None
 
-    plt.figure(figsize=(12, 6))
-    plt.plot(data.index, data[symbol], label=f'{symbol} Close Price', linewidth=2)
-    plt.title(f'{symbol} Closing Price Over Time')
-    plt.xlabel('Date')
-    plt.ylabel('Price ($)')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.show()
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(14, 8))
+    else:
+        fig = ax.get_figure()
 
-def plot_stocks(data):
+    ax.plot(data.index, data[symbol], label=f'{symbol} Close Price', linewidth=2)
+    ax.set_title(f'{symbol} Closing Price Over Time')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Price ($)')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
+
+    return fig
+
+def plot_stocks(data, ax=None):
     """
     Utility function to plot the closing price of multiple stocks. Creates one plot per stock.
     Parameters:
         data (pd.DataFrame): DataFrame containing stock data with 'Close' price columns for multiple stocks.
+        ax (matplotlib.axes.Axes, optional): Matplotlib Axes object to plot on. If None, a new figure and axes will be created. Defaults to None.
     Returns:
-        None: Displays individual plots for each stock.
+        fig (matplotlib.figure.Figure): The matplotlib Figure object containing the plots for the specified stocks.
     """
-    plt.figure(figsize=(12, 6))
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(14, 8))
+    else:
+        fig = ax.get_figure()
+
     for symbol in cf.SYMBOLS:
         if symbol in data.columns:
-            plt.plot(data.index, data[symbol], label=f'{symbol} Close Price', linewidth=2)
+            ax.plot(data.index, data[symbol], label=f'{symbol} Close Price', linewidth=2)
         else:
             print(f"Symbol {symbol} not found in data. Available symbols are: {data.columns.tolist()}")
-    plt.title('Closing Price of Stocks Over Time')
-    plt.xlabel('Date')
-    plt.ylabel('Price ($)')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.show()
+    ax.set_title('Closing Price of Stocks Over Time')
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Price ($)')
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    fig.tight_layout()
     
-def save_plots(data, plot, filename='stock_price_plots.png'):
+    return fig
+
+def save_plots(data, plot, filename='stock_price_plots.png', showfile=False):
     """
     Utility function to save the plot of closing price of multiple stocks. Creates one plot per stock and saves it to specified location.
     Parameters:
@@ -350,7 +339,13 @@ def save_plots(data, plot, filename='stock_price_plots.png'):
     Returns:
         None: Saves the plot of closing price for the specified stocks to a file.
     """
-    pass #tbd in a bit
+    plot.savefig(cf.FIGURES_DIR / filename)
+    if showfile:
+        print(f"Plot saved successfully to {cf.FIGURES_DIR / filename}")
+    else:
+        print(f"Plot saved successfully.")
+        
+    return None
 
 def save_data(data, print_path=False, filename='cleaned_stock_data.csv'):
     """
@@ -369,6 +364,26 @@ def save_data(data, print_path=False, filename='cleaned_stock_data.csv'):
         print(f"Cleaned data for stocks {cf.SYMBOLS} saved to {cf.PROCESSED_DATA / filename}")
     else:
         print(f"Cleaned data for stocks {cf.SYMBOLS} saved successfully.")
+
+def load_data(filename='cleaned_stock_data.csv', showfile=False):
+    """
+    Utility function to load cleaned stock data from a specified file.
+    Parameters:
+        filename (str): Name of the file to load the data from.
+                        Note data must be located in processed data folder.
+    Returns:
+        data (pd.DataFrame): DataFrame containing the loaded cleaned stock data.
+    """
+    try:
+        data = pd.read_csv(cf.PROCESSED_DATA / filename, index_col=0, parse_dates=True)
+        if showfile:
+            print(f"Cleaned data loaded successfully from {cf.PROCESSED_DATA / filename}")
+        else:
+            print(f"Cleaned data loaded successfully.")
+        return data
+    except Exception as e:
+        print(f"Error loading data: {e}. Please check if the file exists and is in the correct format.")
+        sys.exit(1)
 
 def main():
    stock_data = fetch_stock_data(cf.SYMBOLS, cf.START_DATE, cf.END_DATE, cf.INTERVAL)

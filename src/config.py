@@ -27,13 +27,14 @@ START_DATE = datetime(2020, 1, 1) # 5+ years of data for MC simulations
 END_DATE = datetime.now()
 INTERVAL = '1d' # Daily data
 NUM_STOCKS = len(SYMBOLS)
+
+# Time series parameters:
+
 ROLLING_WINDOW = 21 # 21 trading days in a month, I think it will be a good window.
 MIN_WINDOW = 10 # Minimum window size for rolling calcs.
 ANOMALY_THETA_THRESHOLD = 3 #threshold for close-open anomaly detection in terms of standard deviations.
-
-
-# Time series parameters (TBD for now, not until data pipeline is done):
-
+KURTOSIS_THRESHOLD = 3 # threshold for excess kurtosis to flag potential outliers in log returns.
+ANNUALISED_WINDOW = 252 # Num of trading days in a year (for annualising volatility)
 
 
 
