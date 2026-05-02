@@ -8,7 +8,7 @@ import pandas as pd
 import config as cf
 from src.data_pipeline import plot_single_stock, plot_stocks
 from src.data_pipeline import load_data
-from scipy.stats import norm
+from scipy.stats import norm, probplot as qqplot
 from statsmodels.graphics.tsaplots import plot_acf as acf
 from statsmodels.graphics.tsaplots import plot_pacf as pacf
 import seaborn as sns
@@ -220,6 +220,35 @@ def plot_returns_distribution(data, symbol, bin_count=50, ax=None, range_theta=4
 
     return fig
 
+def plot_qq(data, symbol, ax=None):
+    """
+    Plot Q-Q plot of log returns to assess normal nature and see tail behaviour + size.
+    Parameters:
+        data (pd.DataFrame): DataFrame containing log returns of the stock prices.
+        symbol (str): The stock symbol for which to plot Q-Q plot.
+        ax (matplotlib.axes.Axes, optional): Matplotlib Axes object to plot on. 
+                                             If None, a new figure and axes will be created. Defaults to None.
+    Returns:
+        fig (plt.Figure): A matplotlib Figure object containing the Q-Q plot of log returns
+    """
+    column_name = f'{symbol}_Log_Returns'
+
+    if column_name not in data.columns:
+        raise ValueError(f"Log returns for symbol {symbol} not found in data columns. Available columns: {data.columns}")
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(12, 6))
+    else:
+        fig = ax.get_figure()
+
+    qqplot(data[column_name].dropna(), dist=norm, plot=ax)
+    ax.set_title(f'{symbol} Q-Q Plot')
+    ax.set_xlabel('Theoretical Quantiles (Normal Distribution)')
+    ax.set_ylabel('Sample Quantiles (Stock Log Returns)')
+    fig.tight_layout()
+
+    return fig
+
 def plot_acf(data, symbol, squared=False, ax=None):
     """
     Plot autocorrelation function of specified data (log returns for ARIMA diagnostics 
@@ -312,10 +341,10 @@ def stock_show_plots(data, symbol):
                                 - partial autocorrelation function
     """
     figure, axes = plt.subplots(2, 2, figsize=(15, 8))
-    plot_single_stock(data, symbol, ax=axes[0, 0])
-    plot_rolling_statistics(data, symbol, ax=axes[0, 1])
-    plot_annualised_volatility(data, symbol, ax=axes[1, 0])
-    plot_returns_distribution(data, symbol, ax=axes[1, 1])
+    plot_rolling_statistics(data, symbol, ax=axes[0, 0])
+    plot_annualised_volatility(data, symbol, ax=axes[0, 1])
+    plot_returns_distribution(data, symbol, ax=axes[1, 0])
+    plot_qq(data, symbol, ax=axes[1, 1])
 
     return figure
 
