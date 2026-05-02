@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import config as cf
 from src.data_pipeline import plot_single_stock, plot_stocks
-from src.data_pipeline import load_data
+from src.data_pipeline import load_data, save_data, save_plots
 from scipy.stats import norm, probplot as qqplot
 from statsmodels.graphics.tsaplots import plot_acf as acf
 from statsmodels.graphics.tsaplots import plot_pacf as pacf
@@ -431,13 +431,40 @@ def returns_data(data):
     returns_df = data[log_return_cols].dropna()
     return returns_df
 
-def main():
+def time_series_pipeline():
     # Load cleaned data:
     cleaned_data = load_data(filename='cleaned_portfolio_data.csv')
     # Feature engineering:
     features_data = features(cleaned_data)
     features_df = descriptive_statistics(features_data)
-    print(features_df.head(40))
+    time_series_plots = []
+    acf_pacf_plots = []
+    for symbol in cf.SYMBOLS:
+        time_series_plots.append(stock_show_plots(features_df, symbol))
+        acf_pacf_plots.append(stock_show_acf_pacf(features_df, symbol))
+    returns_df = returns_data(features_df)
+    corr_fig = correlation_matrix(features_df)
+    cov_fig = covariance_matrix(features_df)
+
+    #Save all plots to output directory:
+    for i, symbol in enumerate(cf.SYMBOLS):
+        save_plots(time_series_plots[i], directory=cf.TIME_SERIES_DIR, filename=f'{symbol}_time_series_plots.png')
+        save_plots(acf_pacf_plots[i], directory=cf.TIME_SERIES_DIR, filename=f'{symbol}_acf_pacf_plots.png')
+    
+    save_plots(corr_fig, directory=cf.TIME_SERIES_DIR, filename='correlation_matrix.png')
+    save_plots(cov_fig, directory=cf.TIME_SERIES_DIR, filename='covariance_matrix.png')
+
+    # save returns data to processed data directory for use in modelling:
+    save_data(returns_df, filename='log_returns_data.csv')
+
+    print("Time series analysis pipeline completed successfully.")
+
+    return None
+
+
+def main():
+    cf.ensure_directories()
+    time_series_pipeline()
 
 if __name__ == "__main__":
     main()

@@ -2,21 +2,24 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 
-
-
 # Path configuration:
 PROJECT_ROOT = Path(__file__).parent.parent
 RAW_DATA = PROJECT_ROOT / "data" / "raw"
 PROCESSED_DATA = PROJECT_ROOT / "data" / "processed"
 OUTPUT_DIR = PROJECT_ROOT / "output"
 FIGURES_DIR = OUTPUT_DIR / "figures"
+PREPROCESSING_DIR = FIGURES_DIR / "preprocessing"
+TIME_SERIES_DIR = FIGURES_DIR / "time_series"
+MODELS_DIR = FIGURES_DIR / "models"
+MONTE_CARLO_DIR = FIGURES_DIR / "monte_carlo"
+COMPARISON_DIR = FIGURES_DIR / "comparison"
 
 
 def ensure_directories():
    """
    Ensure that all necessary directories exist. If not, create them.
    """
-   for directory in [RAW_DATA, PROCESSED_DATA, FIGURES_DIR]:
+   for directory in [RAW_DATA, PROCESSED_DATA, FIGURES_DIR, PREPROCESSING_DIR, TIME_SERIES_DIR, MODELS_DIR, MONTE_CARLO_DIR, COMPARISON_DIR]:
        directory.mkdir(parents=True, exist_ok=True)
 
 

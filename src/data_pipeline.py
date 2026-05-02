@@ -329,19 +329,19 @@ def plot_stocks(data, ax=None):
     
     return fig
 
-def save_plots(data, plot, filename='stock_price_plots.png', showfile=False):
+def save_plots(plot, directory=cf.PREPROCESSING_DIR, filename='stock_price_plots.png', showfile=False):
     """
     Utility function to save the plot of closing price of multiple stocks. Creates one plot per stock and saves it to specified location.
     Parameters:
-        data (pd.DataFrame): DataFrame containing stock data with 'Close' price columns for multiple stocks.
         plot (plt.Figure): The plot object to save.
+        directory (Path): Directory to save the plot to.
         filename (str): Name of the file to save the plot to.
     Returns:
         None: Saves the plot of closing price for the specified stocks to a file.
     """
-    plot.savefig(cf.FIGURES_DIR / filename)
+    plot.savefig(directory / filename)
     if showfile:
-        print(f"Plot saved successfully to {cf.FIGURES_DIR / filename}")
+        print(f"Plot saved successfully to {directory / filename}")
     else:
         print(f"Plot saved successfully.")
         
@@ -354,6 +354,7 @@ def save_data(data, print_path=False, filename='cleaned_stock_data.csv'):
     Parameters:
         data (pd.DataFrame): Cleaned stock data to be saved.
         print_path (bool): Whether to print the file path after saving.
+
         filename (str): Name of the file to save the data to.
     Returns:
         None: Saves the cleaned data to a specified file path and prints file path for reference.
@@ -385,12 +386,30 @@ def load_data(filename='cleaned_stock_data.csv', showfile=False):
         print(f"Error loading data: {e}. Please check if the file exists and is in the correct format.")
         sys.exit(1)
 
+def data_preprocessing_pipeline():
+    """
+    Main function to run the entire data preprocessing pipeline including data retrieval, validation, cleaning and saving.
+    Parameters:
+        None
+    Returns:
+        None: Runs the data preprocessing pipeline and saves the cleaned data to a specified file path.
+    """
+
+    stock_data = fetch_stock_data(cf.SYMBOLS, cf.START_DATE, cf.END_DATE, cf.INTERVAL)
+    checks = validate_data(stock_data)
+    cleaned_data = clean_data(stock_data, checks_dict=checks)
+    full_stock_plot = plot_stocks(cleaned_data)
+    save_plots(full_stock_plot, filename='cleaned_stock_price_plots.png')
+    save_data(cleaned_data, filename='cleaned_portfolio_data.csv')
+
+    print("Data preprocessing pipeline completed successfully.")
+
+    return None
+    
+
 def main():
-   stock_data = fetch_stock_data(cf.SYMBOLS, cf.START_DATE, cf.END_DATE, cf.INTERVAL)
-   checks = validate_data(stock_data)
-   cleaned_data = clean_data(stock_data, checks_dict=checks)
-   save_data(cleaned_data)
-   print(cleaned_data.head())
+    cf.ensure_directories() # ensure necessary directories exist before running pipeline
+    data_preprocessing_pipeline()
 
 if __name__ == "__main__":
     main()
