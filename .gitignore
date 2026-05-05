@@ -221,6 +221,9 @@ outputs/figures/
 *.jpeg
 *.pdf
 
+# Model parameters
+models/parameters/
+
 # macOS specific
 .DS_Store
 
