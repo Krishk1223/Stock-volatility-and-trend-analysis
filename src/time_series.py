@@ -393,13 +393,16 @@ def correlation_matrix(data):
     
     return fig
 
-def covariance_matrix(data):
+def covariance_matrix(data, return_matrix=False):
     """
     Calculate covariance matrix of log returns for all stocks in the portfolio.
     Parameters:
         data (pd.DataFrame): DataFrame containing log returns of the stock prices.
+        return_matrix (bool): If True, returns the covariance matrix as a pandas DataFrame instead of a plot.
     Returns:
-        fig (plt.Figure): Matplotlib Figure object containing the covariance matrix heatmap.
+        Either:
+        - cov_matrix (pd.DataFrame): Covariance matrix of log returns if return_matrix is True.
+        - fig (plt.Figure): Matplotlib Figure object containing the covariance matrix heatmap.
     """
     data = data.copy()
     log_return_cols = [f'{symbol}_Log_Returns' for symbol in cf.SYMBOLS if f'{symbol}_Log_Returns' in data.columns]
@@ -407,14 +410,18 @@ def covariance_matrix(data):
         raise ValueError("No log return columns found in data. Ensure that log returns have been calculated and added to the DataFrame.")
     
     cov_matrix = data[log_return_cols].cov()
-    fig, ax = plt.subplots(figsize=(12, 6))
-    sns.heatmap(cov_matrix, annot=True, cmap='coolwarm')
-    ax.set_title('Covariance Matrix of Log Returns')
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, horizontalalignment='right')
-    ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
-    fig.tight_layout()
+
+    if return_matrix:
+        return cov_matrix
+    else:
+        fig, ax = plt.subplots(figsize=(12, 6))
+        sns.heatmap(cov_matrix, annot=True, cmap='coolwarm')
+        ax.set_title('Covariance Matrix of Log Returns')
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, horizontalalignment='right')
+        ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+        fig.tight_layout()
     
-    return fig
+        return fig
 
 def returns_data(data):
     """
@@ -444,7 +451,7 @@ def time_series_pipeline():
         acf_pacf_plots.append(stock_show_acf_pacf(features_df, symbol))
     returns_df = returns_data(features_df)
     corr_fig = correlation_matrix(features_df)
-    cov_fig = covariance_matrix(features_df)
+    cov_fig = covariance_matrix(features_df, return_matrix=False)
 
     #Save all plots to output directory:
     for i, symbol in enumerate(cf.SYMBOLS):
