@@ -59,7 +59,7 @@ ARCH_TYPE = 'GARCH' # type of ARCH model to fit. Could use 'EGARCH'.
 GARCH_SCALING = 1000 # scale factor for returns when fitting GARCH model to help optimiser convergence.
 GARCH_P = 1 # order of GARCH terms (lags of conditional variance)
 GARCH_Q = 1 # order of ARCH terms (lags of squared residuals)
-GARCH_DIST = 'StudentsT' # distribution for error terms in GARCH model: 'Normal' for normal, 'StudentsT' for Student's t.
+GARCH_DIST = 'Normal' # distribution for error terms in GARCH model: 'Normal' for normal, 'StudentsT' for Student's t.
 GARCH_MEAN = 'Constant' # mean model for GARCH. Could use 'Zero' if mean is near zero or 'AR' if autoregressive as well.
 PREVIOUS_TRAIN_PERIOD = 60 # shows last 60 days of training periof in GARCH forecast plot for context.
 

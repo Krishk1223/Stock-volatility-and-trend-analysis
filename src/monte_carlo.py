@@ -13,10 +13,31 @@ from src.time_series import correlation_matrix, covariance_matrix
 from src.models import load_garch_parameters
 
 
-def gbm_simulation(last_price, mu, sigma, forecast_steps, num_simulations):
+def gbm_simulation(last_price, mu, sigma, forecast_steps, num_simulations, rng=None):
+    """
+    Simulates stock price paths using Geometric Brownian Motion models alongside Black-Scholes assumptions.
+    Parameters:
+        last_price (float): The last observed stock price to start simulations from.
+        mu (float): The expected return (drift) of the stock.
+        sigma (float): The volatility of the stock.
+        forecast_steps (int): The number of time steps to simulate into the future.
+        num_simulations (int): The number of simulated paths to generate.
+    returns:
+        simulated_paths (np.ndarray): An array of shape (num_simulations, forecast_steps) containing the simulated price paths.
+    """
+    if rng is None:
+        rng = np.random.default_rng(cf.RANDOM_SEED) # create a random number generator instance with the specified seed for reproducibility
+    dt = 1 # daily time steps
+    simulated_paths = np.zeros((num_simulations, forecast_steps))
+    simulated_paths[:, 0] = last_price
 
-    pass
+    for t in range(1, forecast_steps):
+        # GBM: S(t+ 1) = S(t) * exp((mu - sigma^2/2)*dt + sigma*sqrt(dt)*Z))
+        z = rng.normal(size=num_simulations) # standard normal random variables
+        simulated_paths[:, t] = simulated_paths[:, t-1] * np.exp((mu - 0.5 * sigma**2) * dt + sigma * np.sqrt(dt) * z)
 
+    return simulated_paths
+    
 def simulate_price_paths(model_parameters, correlation_matrix, rng, forecast_steps, dist=cf.GARCH_DIST):
     """
     Simulates future price paths based on the specified model and its parameters.
@@ -377,6 +398,8 @@ def monte_carlo_pipeline():
     
     for stock_symbol in cf.SYMBOLS:
         column_name = f'{stock_symbol}_Log_Returns'
+        stock_idx = cf.SYMBOLS.index(stock_symbol)
+        gbm_volatility = np.sqrt(cov_matrix[stock_idx, stock_idx])
         print(f"Simulating price paths for {stock_symbol}")
         last_return = returns_data[column_name].iloc[-1] # get last observed log return for the stock
         last_price = price_data[stock_symbol].iloc[-1] # get last observed price for the stock
@@ -384,6 +407,27 @@ def monte_carlo_pipeline():
         mean_returns = returns_data[column_name].mean()
         mean_returns_list.append(mean_returns)
 
+        # GBM based Monte Carlo simulation: assumes constant volatility and drift
+        gbm_simulated_prices = gbm_simulation(
+            last_price=last_price,
+            mu=mean_returns,
+            sigma=gbm_volatility,
+            forecast_steps=cf.FORECAST_STEPS,
+            num_simulations=cf.NUM_SIMULATIONS,
+            rng=rng
+        )
+
+        # Plot GBM simulated price paths for this stock:
+        fig = plot_simulated_prices(gbm_simulated_prices, stock_symbol, num_paths=50) # plot only 5 paths for clarity
+        save_plots(fig, directory=cf.MONTE_CARLO_DIR, filename=f'{stock_symbol}_GBM_monte_carlo_simulation.png', showfile=False)
+        plt.close(fig)
+
+        #GBM var and es calculations:
+        var_es_results = var_es_calculations(gbm_simulated_prices, last_price, confidence_level=cf.CONFIDENCE_LEVEL)
+        print(f"GBM VaR at {cf.CONFIDENCE_LEVEL*100}% confidence for {stock_symbol}: {var_es_results['VaR']:.4f}")
+        print(f"GBM Expected Shortfall at {cf.CONFIDENCE_LEVEL*100}% confidence for {stock_symbol}: {var_es_results['ES']:.4f}")
+
+        # Garch based Monte Carlo simulation: assumes const mean and time varying volatility
         simulated_returns = monte_carlo_simulation(
             model_parameters=model_params,
             correlation_matrix=correlation_matrix(returns_data, return_matrix=True), # correlation matrix of log returns
