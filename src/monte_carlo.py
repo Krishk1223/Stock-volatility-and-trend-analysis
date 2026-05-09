@@ -397,6 +397,7 @@ def monte_carlo_pipeline():
     mean_returns_list = []
     
     for stock_symbol in cf.SYMBOLS:
+        plot_directory = cf.MONTE_CARLO_DIR / stock_symbol
         column_name = f'{stock_symbol}_Log_Returns'
         stock_idx = cf.SYMBOLS.index(stock_symbol)
         gbm_volatility = np.sqrt(cov_matrix[stock_idx, stock_idx])
@@ -419,7 +420,7 @@ def monte_carlo_pipeline():
 
         # Plot GBM simulated price paths for this stock:
         fig = plot_simulated_prices(gbm_simulated_prices, stock_symbol, num_paths=50) # plot only 5 paths for clarity
-        save_plots(fig, directory=cf.MONTE_CARLO_DIR, filename=f'{stock_symbol}_GBM_monte_carlo_simulation.png', showfile=False)
+        save_plots(fig, directory=plot_directory, filename=f'{stock_symbol}_GBM_monte_carlo_simulation.png', showfile=False)
         plt.close(fig)
 
         #GBM var and es calculations:
@@ -442,7 +443,7 @@ def monte_carlo_pipeline():
 
         #Plot price paths for this stock:
         fig = plot_simulated_prices(simulated_prices, stock_symbol, num_paths=50) # plot only 5 paths for clarity
-        save_plots(fig, directory=cf.MONTE_CARLO_DIR, filename=f'{stock_symbol}_{cf.GARCH_DIST}_monte_carlo_simulation.png', showfile=False)
+        save_plots(fig, directory=plot_directory, filename=f'{stock_symbol}_{cf.GARCH_DIST}_monte_carlo_simulation.png', showfile=False)
         plt.close(fig)
 
         #Value at Risk and Expected Shortfall calculations:
@@ -452,13 +453,13 @@ def monte_carlo_pipeline():
         
         #Simulated price distribution plot
         fig = plot_simulated_distribution(simulated_prices, last_price, stock_symbol)
-        save_plots(fig, directory=cf.MONTE_CARLO_DIR, filename=f'{stock_symbol}_{cf.GARCH_DIST}_simulated_price_distribution.png', showfile=False)
+        save_plots(fig, directory=plot_directory, filename=f'{stock_symbol}_{cf.GARCH_DIST}_simulated_price_distribution.png', showfile=False)
         plt.close(fig)
 
         #plot confidence intervals for this stock:
         confidence_dict = calculate_confidence_intervals(simulated_prices)
         fig = plot_confidence_intervals(simulated_prices, confidence_dict, stock_symbol)
-        save_plots(fig, directory=cf.MONTE_CARLO_DIR, filename=f'{stock_symbol}_{cf.GARCH_DIST}_confidence_intervals.png', showfile=False)
+        save_plots(fig, directory=plot_directory, filename=f'{stock_symbol}_{cf.GARCH_DIST}_confidence_intervals.png', showfile=False)
         plt.close(fig)
 
     #Portfolio optimisation:

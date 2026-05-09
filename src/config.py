@@ -16,16 +16,6 @@ MONTE_CARLO_DIR = FIGURES_DIR / "monte_carlo"
 COMPARISON_DIR = FIGURES_DIR / "comparison"
 
 
-def ensure_directories():
-   """
-   Ensure that all necessary directories exist. If not, create them.
-   """
-   for directory in [RAW_DATA, PROCESSED_DATA, FIGURES_DIR, PREPROCESSING_DIR,
-                     TIME_SERIES_DIR, MODELS_DIR, MONTE_CARLO_DIR, COMPARISON_DIR,
-                     MODEL_PARAMATERS]:
-       directory.mkdir(parents=True, exist_ok=True)
-
-
 # Stock configuration: Balanced portfolio of 5 stocks across tech, consumer, energy and finance
 SYMBOLS = ['AMD', 'GOOGL', 'JPM', 'XOM', 'KO']
 STOCK_EXCHANGE_TIMEZONE = 'NYSE' # change to whatever is relevant for stocks chosen (NASDAQ and NYSE use same).
@@ -34,6 +24,19 @@ END_DATE = datetime.now()
 INTERVAL = '1d' # Daily data
 NUM_STOCKS = len(SYMBOLS)
 RANDOM_SEED = 42 # hitchhiker's guide to the stock market - for reproducibility of random processes in the pipeline.
+MC_STOCKS_DIR = []
+for stock in SYMBOLS:
+      stock_dir = MONTE_CARLO_DIR / stock
+      MC_STOCKS_DIR.append(stock_dir)
+
+def ensure_directories():
+   """
+   Ensure that all necessary directories exist. If not, create them.
+   """
+   for directory in [RAW_DATA, PROCESSED_DATA, FIGURES_DIR, PREPROCESSING_DIR,
+                     TIME_SERIES_DIR, MODELS_DIR, MONTE_CARLO_DIR, COMPARISON_DIR,
+                     MODEL_PARAMATERS] + MC_STOCKS_DIR:
+       directory.mkdir(parents=True, exist_ok=True)
 
 # Time series parameters:
 
@@ -59,7 +62,7 @@ ARCH_TYPE = 'GARCH' # type of ARCH model to fit. Could use 'EGARCH'.
 GARCH_SCALING = 1000 # scale factor for returns when fitting GARCH model to help optimiser convergence.
 GARCH_P = 1 # order of GARCH terms (lags of conditional variance)
 GARCH_Q = 1 # order of ARCH terms (lags of squared residuals)
-GARCH_DIST = 'Normal' # distribution for error terms in GARCH model: 'Normal' for normal, 'StudentsT' for Student's t.
+GARCH_DIST = 'StudentsT' # distribution for error terms in GARCH model: 'Normal' for normal, 'StudentsT' for Student's t.
 GARCH_MEAN = 'Constant' # mean model for GARCH. Could use 'Zero' if mean is near zero or 'AR' if autoregressive as well.
 PREVIOUS_TRAIN_PERIOD = 60 # shows last 60 days of training periof in GARCH forecast plot for context.
 

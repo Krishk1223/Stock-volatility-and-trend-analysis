@@ -1,3 +1,4 @@
+from src import config as cf
 from src.data_pipeline import data_preprocessing_pipeline
 from src.time_series import time_series_pipeline
 from src.models import model_pipeline
@@ -5,6 +6,7 @@ from src.monte_carlo import monte_carlo_pipeline
 
 
 def main():
+    cf.ensure_directories() # Ensure all necessary directories exist before starting the pipeline.
     print("RUNNING STOCK ANALYSIS PIPELINE")
 
     # Step 1: Data Collection and Preprocessing
