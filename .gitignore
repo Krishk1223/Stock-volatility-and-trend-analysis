@@ -222,7 +222,10 @@ outputs/figures/
 *.pdf
 
 # Model parameters
-models/parameters/
+models/*
+
+# any pkl files
+*.pkl
 
 # macOS specific
 .DS_Store

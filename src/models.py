@@ -14,6 +14,16 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 # Data splitting:
 def train_test_split(returns_data, test_size=cf.FORECAST_STEPS):
+    """
+    Splits log returns data into training and test sets based on specified test size 
+    (number of steps to forecast).
+    Parameters:
+        returns_data (pd.DataFrame): DataFrame containing log returns data for stocks.
+        test_size (int): Number of time steps to include in the test set (default is config.FORECAST_STEPS).
+    Returns:
+        train_data (pd.DataFrame): DataFrame containing training set log returns data.
+        test_data (pd.DataFrame): DataFrame containing test set log returns data.
+    """
     split_index = int(len(returns_data) - test_size)
     train_data = returns_data.iloc[:split_index]
     test_data = returns_data.iloc[split_index:]
@@ -62,6 +72,18 @@ def forecast_arima(model, steps=cf.FORECAST_STEPS):
     return forecast_result
 
 def evaluate_arima(model, forecast, stock_symbol, test_data):
+    """
+    Evaluates ARIMA model forecast against actual log returns in test set using MSE, MAE, RMSE 
+    and R-squared metrics.
+    Parameters:
+        model: Fitted ARIMA model object.
+        forecast (pd.Series): Forecasted log returns from ARIMA model.
+        stock_symbol (str): Symbol of the stock for which to evaluate the forecast.
+        test_data (pd.DataFrame): Test set containing log returns data for stocks.
+    Returns:
+        metrics (dict): Dictionary containing evaluation metrics (MSE, MAE, RMSE, R-squared) for the 
+        ARIMA forecast.
+    """
     column = f'{stock_symbol}_Log_Returns'
     if column not in test_data.columns:
         raise ValueError(f"Column '{column}' not found in test_data.")
@@ -71,7 +93,9 @@ def evaluate_arima(model, forecast, stock_symbol, test_data):
     r2 = r2_score(actual, forecast)
     
     metrics = {'MSE': mse, 'RMSE': np.sqrt(mse), 'MAE': mae, 'R-squared': r2}
-    parameters = {'order': model.order}
+    parameters = {
+        'order': model.order
+        }
 
     return metrics, parameters
 
@@ -125,6 +149,21 @@ def plot_arima_forecast(returns_data, forecast_df, stock_symbol, ax=None):
 
 # GARCH model functions:
 def fit_garch(train_data, test_data, stock_symbol, distribution=cf.GARCH_DIST, scale=cf.GARCH_SCALING, type=cf.ARCH_TYPE):
+    """
+    Fits a GARCH model to log returns data for specified stock symbol using a rolling window approach,
+    generating forecasts for each time step in the test set. Returns a dictionary containing forecasted
+    volatilities, actual test returns, and final fitted model results for parameter extraction.
+    Parameters:
+        train_data (pd.DataFrame): Training set containing log returns data for stocks.
+        test_data (pd.DataFrame): Test set containing log returns data for stocks.
+        stock_symbol (str): Symbol of the stock for which to fit the GARCH model.
+        distribution (str): Distribution for error terms in GARCH model ('Normal' or 'StudentsT').
+        scale (float): Scaling factor for returns when fitting GARCH model to help optimiser convergence.
+        type (str): Type of ARCH model to fit (e.g., 'GARCH', 'EGARCH').
+    Returns:
+        rolling_results (dict): Dictionary containing forecasted volatilities, actual test returns, and final fitted model
+                                 results for parameter extraction. (Or None)
+    """
     if distribution not in ['Normal', 'StudentsT']:
         raise ValueError("Invalid distribution specified. Use 'Normal' for normal or 'StudentsT' for Student's t.")
 
@@ -175,6 +214,22 @@ def fit_garch(train_data, test_data, stock_symbol, distribution=cf.GARCH_DIST, s
     return rolling_results, None
 
 def extract_garch_params(rolling_results, forecast=None, scale=cf.GARCH_SCALING):
+    """
+    Extracts key parameters and metrics from GARCH model fitting results, including forecasted volatilities,
+    realised volatility, mean forecasted volatility, mean and std of realised volatility, and GARCH
+    parameters (alpha, beta, omega, persistence) if available.
+    Parameters:
+        rolling_results (dict): Dictionary containing forecasted volatilities, actual test returns,
+                                and final fitted model results for parameter extraction.
+        forecast (pd.Series, optional): Series containing forecasted log returns from ARIMA model, 
+                                        used for context in GARCH evaluation.
+        scale (float): Scaling factor used for returns when fitting GARCH model, 
+                        used to rescale parameters if needed.
+
+    Returns:
+        params_dict (dict): Dictionary containing extracted parameters and metrics from GARCH model 
+                            fitting results.
+    """
     forecasted_volatilities = rolling_results['forecasted_volatilities']
     test_returns = rolling_results['test_returns']
     final_results = rolling_results.get('final_results')
@@ -198,14 +253,30 @@ def extract_garch_params(rolling_results, forecast=None, scale=cf.GARCH_SCALING)
                 params_dict['mu'] = float(final_results.params['mu'] / garch_scale)
             params_dict['alpha'] = float(final_results.params['alpha[1]'])
             params_dict['beta'] = float(final_results.params['beta[1]'])
-            params_dict['omega'] = float(final_results.params['omega'])
+            params_dict['omega'] = float(final_results.params['omega'] / garch_scale ** 2)
             params_dict['persistence'] = float(final_results.params['alpha[1]'] + final_results.params['beta[1]'])
-        except:
-            pass
+            params_dict['dof'] = float(final_results.params['nu']) if cf.GARCH_DIST == 'StudentsT' else None
+            params_dict['residuals'] = final_results.resid/garch_scale
+            params_dict['last_epsilon'] = float(params_dict['residuals'].iloc[-1])
+            params_dict['last_sigma'] = float(final_results.conditional_volatility.iloc[-1]/garch_scale)
+        except Exception as e:
+            print(f"Warning: Could not extract some GARCH parameters: {e}")
     
     return params_dict
 
 def plot_garch_forecast_volatility(train_data, test_data, results_dict, stock_symbol, ax=None):
+    """
+    Plots forecasted volatility from rolling GARCH model against realised volatility for specified stock symbol.
+    Parameters:
+        train_data (pd.DataFrame): Training set containing log returns data for stocks.
+        test_data (pd.DataFrame): Test set containing log returns data for stocks.
+        results_dict (dict): Dictionary containing forecasted volatilities, actual test returns, and
+                                final fitted model results for parameter extraction.
+        stock_symbol (str): Symbol of the stock for which to plot the GARCH forecast.
+        ax (matplotlib.axes.Axes, optional): Matplotlib Axes object to plot on. if none then creates new figure.
+    Returns:
+        fig (matplotlib.figure.Figure): Figure object containing the plot.
+    """
     if ax is None:
         fig, ax = plt.subplots(figsize=(12, 6))
     else:
@@ -230,6 +301,18 @@ def plot_garch_forecast_volatility(train_data, test_data, results_dict, stock_sy
     return fig
 
 def evaluate_garch(results_dict, test_data, stock_symbol):
+    """
+    Evaluates GARCH model forecasted volatilities against realised volatility using MSE, MAE, RMSE 
+    and QLIKE metrics.
+    Parameters:
+        results_dict (dict): Dictionary containing forecasted volatilities, actual test returns, and
+                                final fitted model results for parameter extraction.
+        test_data (pd.DataFrame): Test set containing log returns data for stocks.
+        stock_symbol (str): Symbol of the stock for which to evaluate the GARCH forecast.
+    Returns:
+        metrics (dict): Dictionary containing evaluation metrics (MSE, MAE, RMSE and QLIKE) for GARCH forecast.
+        parameters (dict): Dictionary containing GARCH model parameters (alpha, beta, omega, persistence) if available.
+    """
     forecasted_vol = results_dict['forecasted_volatilities']
     realised_vol = results_dict['realised_volatility']
     
@@ -253,7 +336,11 @@ def evaluate_garch(results_dict, test_data, stock_symbol):
         'Std_Realised_Volatility': float(results_dict['std_realised_vol']),
     }
     
-    parameters = {}
+    parameters = {
+        'mean_forecasted_vol': results_dict.get('mean_forecasted_vol'),
+        'mean_realised_vol': results_dict.get('mean_realised_vol'),
+        'std_realised_vol': results_dict.get('std_realised_vol'),
+    }
     if 'mu' in results_dict:
         parameters['mu'] = float(results_dict['mu'])
     if 'alpha' in results_dict:
@@ -264,18 +351,35 @@ def evaluate_garch(results_dict, test_data, stock_symbol):
         parameters['omega'] = float(results_dict['omega'])
     if 'persistence' in results_dict:
         parameters['persistence'] = float(results_dict['persistence'])
+    if 'dof' in results_dict and results_dict['dof'] is not None:
+        parameters['dof'] = float(results_dict['dof'])
+    if 'last_epsilon' in results_dict:
+        parameters['last_epsilon'] = float(results_dict['last_epsilon'])
+    if 'last_sigma' in results_dict:
+        parameters['last_sigma'] = float(results_dict['last_sigma'])
     
     return metrics, parameters
 
 # saving parameters:
 def save_parameters_pickle(arima_params, stock_symbol, garch_params, output_dir=cf.MODEL_PARAMATERS):
+    """
+    Saves ARIMA and GARCH model parameters for specified stock symbol to pickle files in output directory.
+    Parameters:
+        arima_params (dict): Dictionary containing ARIMA model parameters for the specified stock symbol.
+        stock_symbol (str): Symbol of the stock for which to save model parameters.
+        garch_params (dict): Dictionary containing GARCH model parameters for the specified stock symbol. 
+        output_dir (str or Path, optional): Directory where model parameter pickle files should be saved. 
+                                            If None, defaults to config.MODEL_PARAMATERS.
+    Returns:
+        None
+    """
     output_dir = Path(output_dir)
     
     arima_file = output_dir / f'{stock_symbol}_arima_parameters.pkl'
     with open(arima_file, 'wb') as f:
         pickle.dump(arima_params, f)
     
-    garch_file = output_dir / f'{stock_symbol}_garch_parameters.pkl'
+    garch_file = output_dir / f'{stock_symbol}_{cf.ARCH_TYPE}_parameters.pkl'
     with open(garch_file, 'wb') as f:
         pickle.dump(garch_params, f)
 
@@ -283,6 +387,15 @@ def save_parameters_pickle(arima_params, stock_symbol, garch_params, output_dir=
 
 # loading parameters:
 def load_arima_parameters(stock_symbol, input_dir=None):
+    """
+    Loads ARIMA model parameters for specified stock symbol from pickle file in input directory.
+    Parameters:
+        stock_symbol (str): Symbol of the stock for which to load ARIMA parameters.
+        input_dir (str or Path, optional): Directory where ARIMA parameter pickle files are stored.
+                                             If None, defaults to config.MODEL_PARAMATERS.
+    Returns:
+        parameters (dict): Dictionary containing ARIMA model parameters for the specified stock symbol.
+    """
     if input_dir is None:
         input_dir = Path(cf.MODEL_PARAMATERS)
     else:
@@ -295,7 +408,17 @@ def load_arima_parameters(stock_symbol, input_dir=None):
     
     return parameters
 
+#pipeline:
 def load_garch_parameters(stock_symbol, input_dir=None):
+    """
+    Loads GARCH model parameters for specified stock symbol from pickle file in input directory.
+    Parameters:
+        stock_symbol (str): Symbol of the stock for which to load GARCH parameters.
+        input_dir (str or Path, optional): Directory where GARCH parameter pickle files are
+                                           stored. If None, defaults to config.MODEL_PARAMATERS.
+    Returns:
+        parameters (dict): Dictionary containing GARCH model parameters for the specified stock symbol.
+    """
     if input_dir is None:
         input_dir = Path(cf.MODEL_PARAMATERS)
     else:
@@ -328,12 +451,12 @@ def model_pipeline(all_results=None):
     all_results = {}
     
     for stock_symbol in cf.SYMBOLS:
-        print(f"\n{stock_symbol}:")
+        print(f"{stock_symbol}:")
         
         arima_model = fit_arima(train_data, stock_symbol)
         forecast_ARIMA = forecast_arima(arima_model)
         arima_metrics, arima_params = evaluate_arima(arima_model, forecast_ARIMA, stock_symbol, test_data)
-        print(f"  ARIMA Metrics: {arima_metrics}")
+        print(f"ARIMA Metrics: {arima_metrics}")
         
         arima_forecast_df = convert_forecast_to_df(forecast_ARIMA, returns_data, stock_symbol)
         arima_fig = plot_arima_forecast(returns_data, arima_forecast_df, stock_symbol)
@@ -344,12 +467,12 @@ def model_pipeline(all_results=None):
         garch_results, _ = fit_garch(train_data, test_data, stock_symbol)
         garch_params_dict = extract_garch_params(garch_results)
         garch_metrics, garch_params = evaluate_garch(garch_params_dict, test_data, stock_symbol)
-        print(f"  GARCH Metrics: {garch_metrics}")
+        print(f"GARCH Metrics: {garch_metrics}")
         
         save_parameters_pickle(arima_params, stock_symbol, garch_params, output_dir=cf.MODEL_PARAMATERS)
         
         garch_forecast_fig = plot_garch_forecast_volatility(train_data, test_data, garch_params_dict, stock_symbol)
-        garch_forecast_plot_name = f'{stock_symbol}_garch_forecast_volatility.png'
+        garch_forecast_plot_name = f'{stock_symbol}_{cf.ARCH_TYPE}_forecast_volatility.png'
         save_plots(garch_forecast_fig, directory=cf.MODELS_DIR, filename=garch_forecast_plot_name, showfile=False)
         plt.close(garch_forecast_fig)
         
@@ -364,6 +487,5 @@ def model_pipeline(all_results=None):
 def main():
     model_pipeline()
     
-
 if __name__ == "__main__":
     main()

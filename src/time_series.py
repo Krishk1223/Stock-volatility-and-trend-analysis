@@ -370,13 +370,16 @@ def stock_show_acf_pacf(data, symbol):
 
     return figure
 
-def correlation_matrix(data):
+def correlation_matrix(data, return_matrix=False):
     """
     Calculate correlation matrix of log returns for all stocks in the portfolio.
     Parameters:
         data (pd.DataFrame): DataFrame containing log returns of the stock prices.
+        return_matrix (bool): If True, returns the correlation matrix as a pandas DataFrame instead of a plot.
     Returns:
-        fig (plt.Figure): Matplotlib Figure object containing the correlation matrix heatmap.
+        Either:
+        - corr_matrix (pd.DataFrame): Correlation matrix of log returns if return_matrix is True.
+        - fig (plt.Figure): Matplotlib Figure object containing the correlation matrix heatmap.
     """
     data = data.copy()
     log_return_cols = [f'{symbol}_Log_Returns' for symbol in cf.SYMBOLS if f'{symbol}_Log_Returns' in data.columns]
@@ -384,6 +387,9 @@ def correlation_matrix(data):
         raise ValueError("No log return columns found in data. Ensure that log returns have been calculated and added to the DataFrame.")
     
     corr_matrix = data[log_return_cols].corr()
+    if return_matrix:
+        return corr_matrix.values
+
     fig, ax = plt.subplots(figsize=(12, 6))
     sns.heatmap(corr_matrix, annot=True, cmap='coolwarm')
     ax.set_title('Correlation Matrix of Log Returns')
@@ -412,7 +418,7 @@ def covariance_matrix(data, return_matrix=False):
     cov_matrix = data[log_return_cols].cov()
 
     if return_matrix:
-        return cov_matrix
+        return cov_matrix.values
     else:
         fig, ax = plt.subplots(figsize=(12, 6))
         sns.heatmap(cov_matrix, annot=True, cmap='coolwarm')

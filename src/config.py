@@ -33,6 +33,7 @@ START_DATE = datetime(2020, 1, 1) # 5+ years of data for MC simulations
 END_DATE = datetime.now()
 INTERVAL = '1d' # Daily data
 NUM_STOCKS = len(SYMBOLS)
+RANDOM_SEED = 42 # hitchhiker's guide to the stock market - for reproducibility of random processes in the pipeline.
 
 # Time series parameters:
 
@@ -62,6 +63,12 @@ GARCH_DIST = 'StudentsT' # distribution for error terms in GARCH model: 'Normal'
 GARCH_MEAN = 'Constant' # mean model for GARCH. Could use 'Zero' if mean is near zero or 'AR' if autoregressive as well.
 PREVIOUS_TRAIN_PERIOD = 60 # shows last 60 days of training periof in GARCH forecast plot for context.
 
-
-
 # Monte Carlo Simulation parameters (TBD for now, not until data pipeline is done):
+NUM_SIMULATIONS = 1000 # number of simulated paths to generate for each stock.
+
+# Comparison parameters:
+CONFIDENCE_LEVEL = 0.95 # confidence level for prediction intervals in model comparison plots.
+UPPER_PERCENTILE = 95 # percentile for upper bound of prediction intervals in comparison plots.
+LOWER_PERCENTILE = 5 # percentile for lower bound of prediction intervals in comparison plots.
+RISK_FREE_RATE = 0.00 # risk free rate for Sharpe ratio calculations in model comparison.
+FRONTIER_PORTFOLIOS = 100 # number of random portfolios to generate for efficient frontier plot in model comparison.
