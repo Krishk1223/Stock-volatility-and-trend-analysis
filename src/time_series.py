@@ -461,9 +461,9 @@ def time_series_pipeline():
 
     #Save all plots to output directory:
     for i, symbol in enumerate(cf.SYMBOLS):
-        save_plots(time_series_plots[i], directory=cf.TIME_SERIES_DIR, filename=f'{symbol}_time_series_plots.png')
-        save_plots(acf_pacf_plots[i], directory=cf.TIME_SERIES_DIR, filename=f'{symbol}_acf_pacf_plots.png')
-    
+        save_plots(time_series_plots[i], directory=cf.TIME_SERIES_STOCKS_DIR[i], filename=f'{symbol}_time_series_plots.png')
+        save_plots(acf_pacf_plots[i], directory=cf.TIME_SERIES_STOCKS_DIR[i], filename=f'{symbol}_acf_pacf_plots.png')
+
     save_plots(corr_fig, directory=cf.TIME_SERIES_DIR, filename='correlation_matrix.png')
     save_plots(cov_fig, directory=cf.TIME_SERIES_DIR, filename='covariance_matrix.png')
 
