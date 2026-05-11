@@ -21,6 +21,8 @@ Portfolio Theory by maximising the Sharpe Ratio.
 
 ### Installation
 
+Copy repository url from above then:
+
 ```bash
 git clone <repository-url>
 cd stock_analysis
