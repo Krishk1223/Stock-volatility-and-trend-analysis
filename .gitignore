@@ -219,7 +219,6 @@ outputs/figures/
 *.png
 *.jpg
 *.jpeg
-*.pdf
 
 # Model parameters
 models/*

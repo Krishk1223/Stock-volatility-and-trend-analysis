@@ -48,6 +48,6 @@ python main.py
 ## Notes
 
 - This project is intended for educational and analytical use.
-- It does not provide financial advice.
+- IT DOES NOT COUNT AS FINANCIAL ADVICE.
 
 
